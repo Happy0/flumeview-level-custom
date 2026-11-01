@@ -1,0 +1,20 @@
+{
+  "name": "flumeview-level-custom",
+  "version": "1.0.0",
+  "description": "",
+  "license": "MIT",
+  "author": "Gordon Martin",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "charwise": "^3.0.1",
+    "level": "^10.0.0",
+    "level-read-stream": "^2.0.0",
+    "obv": "^0.0.1",
+    "pull-level": "^2.0.4",
+    "pull-write": "^1.1.4"
+  }
+}
