@@ -5,7 +5,7 @@ const codec = require("flumecodec");
 const util = require("util");
 const { rmSync } = require("fs");
 const pull = require("pull-stream");
-const { describe } = require("vitest");
+const Aborter = require('pull-abortable');
 
 describe("flumeview-level-custom flumeview builder tests", () => {
   function mapper(db, item) {
@@ -81,7 +81,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       const source = read({
         live: false,
         gte: "testaroonie",
-        lte: "testaroonie2"
+        lte: "testaroonie2",
       });
 
       const result = await new Promise((resolve, reject) => {
@@ -103,30 +103,65 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
     });
 
+    test("Read live stream", async () => {
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
 
-  test('Read live stream', () => {
+      const append = util.promisify(db.append);
+      const read = db["flumeviewCustom"].read;
 
-  })
+      await append({ id: "testaroonie", value: "value" });
+      await append({ id: "testaroonie2", value: "value2", type: "post" });
 
-  test('Read live stream (del)', () => {
-    
-  })
+      const source = read({
+        live: false,
+        gte: "testaroonie",
+      });
 
-  test('Read stream (keys only)', () => {
+      const aborter = Aborter();
 
-  })
+      const resultPromise = new Promise((resolve, reject) => {
+        const result = [];
+        pull(
+          source,
+          aborter,
+          pull.drain(
+            (item) => {
+              if (item.value === 'value3') {
+                aborter.abort();
+              }
 
-  test('Read stream (values only)', () => {
+              result.push(item)
+            },
+            (err) => {
+              err ? reject(err) : resolve(result);
+            },
+          ),
+        );
+      });
 
-  })
+      await append({ id: "testaroonie3", value: "value3" });
+      const result = await resultPromise;
+
+      expect(result.length).toStrictEqual(3);
+
+      expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
+      expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
+      expect(result[2]).toStrictEqual({ key: "testaroonie3", value: "value3" });
+
+    });
+
+    test("Read live stream (deletion)", () => {});
+
+    test("Read live stream (update key)", () => {});
+
+    test("Read stream (keys only)", () => {});
+
+    test("Read stream (values only)", () => {});
   });
 
-  describe('Offset tracking', () => {
-
-    test('Starts from last offset on startup', () => {
-      
-    })
-
-  })
-
+  describe("Offset tracking", () => {
+    test("Starts from last offset on startup", () => {});
+  });
 });

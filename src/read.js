@@ -32,5 +32,4 @@ function createStream(db, opts) {
   } else {
     return new EntryStream(db, opts);
   }
-
 }
