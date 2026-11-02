@@ -5,7 +5,7 @@ const charwise = require("charwise");
 const { Level } = require("level");
 const Live = require("pull-live");
 const { old, live } = require("./read");
-const pull = require('pull-stream')
+const pull = require("pull-stream");
 
 const METADATA_KEY = "\x00";
 
