@@ -5,7 +5,7 @@ const codec = require("flumecodec");
 const util = require("util");
 const { rmSync } = require("fs");
 const pull = require("pull-stream");
-const Aborter = require('pull-abortable');
+const Aborter = require("pull-abortable");
 
 describe("flumeview-level-custom flumeview builder tests", () => {
   function mapper(db, item) {
@@ -115,7 +115,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       await append({ id: "testaroonie2", value: "value2", type: "post" });
 
       const source = read({
-        live: false,
+        live: true,
         gte: "testaroonie",
       });
 
@@ -128,11 +128,11 @@ describe("flumeview-level-custom flumeview builder tests", () => {
           aborter,
           pull.drain(
             (item) => {
-              if (item.value === 'value3') {
+              if (item.value === "value3") {
                 aborter.abort();
               }
 
-              result.push(item)
+              result.push(item);
             },
             (err) => {
               err ? reject(err) : resolve(result);
@@ -149,10 +149,62 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
       expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
       expect(result[2]).toStrictEqual({ key: "testaroonie3", value: "value3" });
-
     });
 
-    test("Read live stream (deletion)", () => {});
+    test("Read live stream (deletion)", async () => {
+      //   function mapper(db, item) {
+      //     console.log(item);
+
+      //     const type = item.type || 'put';
+      //     return [{ type: type, key: item.id, value: item.value }];
+      //   }
+
+      // db = Flume(
+      //   Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
+      // ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
+
+      // const append = util.promisify(db.append);
+      // const read = db["flumeviewCustom"].read;
+
+      // await append({ id: "testaroonie", value: "value" });
+      // await append({ id: "testaroonie2", value: "value2" });
+
+      // const source = read({
+      //   live: true,
+      //   gte: "testaroonie"
+      // });
+
+      // const aborter = Aborter();
+
+      // const resultPromise = new Promise((resolve, reject) => {
+      //   const result = [];
+      //   pull(
+      //     source,
+      //     aborter,
+      //     pull.drain(
+      //       (item) => {
+      //         if (item.value === "value3") {
+      //           aborter.abort();
+      //         }
+
+      //         result.push(item);
+      //       },
+      //       (err) => {
+      //         err ? reject(err) : resolve(result);
+      //       },
+      //     ),
+      //   );
+      // });
+
+      // await append({ id: "testaroonie", value: "value3", type: 'del' });
+      // const result = await resultPromise;
+
+      // expect(result.length).toStrictEqual(3);
+
+      // expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
+      // expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
+      // expect(result[2]).toStrictEqual({ key: "testaroonie", type: "del" });
+    });
 
     test("Read live stream (update key)", () => {});
 
