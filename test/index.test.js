@@ -5,6 +5,7 @@ const codec = require("flumecodec");
 const util = require("util");
 const { rmSync } = require("fs");
 const pull = require("pull-stream");
+const { describe } = require("vitest");
 
 describe("flumeview-level-custom flumeview builder tests", () => {
   function mapper(db, item) {
@@ -101,7 +102,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
       expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
     });
-  });
+
 
   test('Read live stream', () => {
 
@@ -116,6 +117,15 @@ describe("flumeview-level-custom flumeview builder tests", () => {
   })
 
   test('Read stream (values only)', () => {
+
+  })
+  });
+
+  describe('Offset tracking', () => {
+
+    test('Starts from last offset on startup', () => {
+      
+    })
 
   })
 
