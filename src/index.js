@@ -5,6 +5,7 @@ const charwise = require("charwise");
 const { Level } = require("level");
 const Live = require("pull-live");
 const { old, live } = require("./read");
+const pull = require('pull-stream')
 
 const METADATA_KEY = "\x00";
 
@@ -26,7 +27,7 @@ module.exports = function (version, asyncMapper, filter) {
 
     const since = Obv();
     const db = createLevelDb(dir, log, name);
-    const closed = false;
+    let closed = false;
 
     startConsumingLog(db, since, version);
 
@@ -66,25 +67,25 @@ module.exports = function (version, asyncMapper, filter) {
                 return db.batch([metadata, ...items]);
               })
               .then((_) => {
-                since.set(item.since);
+                since.set(item.seq);
                 cb();
               })
               .catch((e) => console.error(e));
           }
         },
+        null,
         MAX_ITEM_BUFFER_SIZE,
         streamEndCb,
       );
     }
 
-    function destroy() {
+    function destroy(cb) {
+      cb = cb || (() => {});
       since.set(-1);
-      db.clear();
-
-      return outdated;
+      db.clear().then(cb);
     }
 
-    async function startConsumingLog(db, since, currentVersion) {
+    async function startConsumingLog(db, since) {
       const value = await db.get(METADATA_KEY, { keyEncoding: "utf8" });
 
       if (!value) {
@@ -96,7 +97,7 @@ module.exports = function (version, asyncMapper, filter) {
         since.set(value.since);
       } else {
         // version has changed, wipe db and start over.
-        destroy();
+        destroy(() => {});
       }
     }
 
@@ -118,12 +119,14 @@ module.exports = function (version, asyncMapper, filter) {
       },
       destroy: destroy,
       close: function (cb) {
+        cb = cb || (() => {});
+
         closed = true;
 
         if (writer) {
-          writer.abort(() => db.close(cb(err)));
+          writer.abort(() => db.close().then(cb));
         } else {
-          db.close(cb);
+          db.close().then(cb);
         }
       },
       get: function (key, cb) {
