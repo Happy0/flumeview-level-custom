@@ -5,16 +5,26 @@
   "license": "MIT",
   "author": "Gordon Martin",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "flumecodec": "^0.0.1",
+    "flumedb": "^2.1.8",
+    "flumelog-memory": "^1.0.2",
+    "flumelog-offset": "^3.4.4",
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "charwise": "^3.0.1",
     "level": "^10.0.0",
+    "level-post": "^1.0.7",
     "level-read-stream": "^2.0.0",
     "obv": "^0.0.1",
     "pull-level": "^2.0.4",
-    "pull-write": "^1.1.4"
+    "pull-live": "^1.0.1",
+    "pull-write": "^1.1.4",
+    "stream-to-pull-stream": "^1.7.3"
   }
 }
