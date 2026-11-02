@@ -7,13 +7,15 @@
   "type": "commonjs",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run .",
+    "prettier": "prettier . --write"
   },
   "devDependencies": {
     "flumecodec": "^0.0.1",
     "flumedb": "^2.1.8",
     "flumelog-memory": "^1.0.2",
     "flumelog-offset": "^3.4.4",
+    "prettier": "^3.9.10",
     "vitest": "^5.0.5"
   },
   "dependencies": {
