@@ -111,8 +111,12 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     
   })
 
-  test('Read live stream (without keys', () => {
-    
+  test('Read stream (keys only)', () => {
+
+  })
+
+  test('Read stream (values only)', () => {
+
   })
 
 });
