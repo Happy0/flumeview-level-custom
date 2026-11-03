@@ -137,6 +137,14 @@ module.exports = function (version, asyncMapper, filter) {
           }
         });
       },
+      /**
+       *
+       * @param {*} opts The level DB stream key range options ( see 'level-read-stream' library ) as well as an optional 'live' parameter to indicate whether the
+       * stream should stay live an emit live updates. IF live, a {sync:true} object will be emitted when the stream is about to emit
+       * live values and each item will have a 'type' field (put, del) indicating whether the database operation type as well as the key
+       * and value
+       * @returns a pull-stream source of database entries satisfying the input range
+       */
       read: function (opts) {
         return createPullStream(db, opts);
       },
