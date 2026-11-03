@@ -9,8 +9,6 @@ const Aborter = require("pull-abortable");
 
 describe("flumeview-level-custom flumeview builder tests", () => {
   function mapper(db, item) {
-    console.log(item);
-
     return [{ type: "put", key: item.id, value: item.value }];
   }
 
@@ -19,10 +17,9 @@ describe("flumeview-level-custom flumeview builder tests", () => {
   describe("get", () => {
     afterEach(async () => {
       if (db) {
-        console.log("Closing!");
         db.close(() => {});
         db = null;
-        rmSync("/tmp/flumeview-level-custom", { recursive: true });
+        rmSync("/tmp/flumeview-level-custom", { recursive: true, force: true });
       }
     });
 
@@ -66,6 +63,14 @@ describe("flumeview-level-custom flumeview builder tests", () => {
   });
 
   describe("read", () => {
+    afterEach(async () => {
+      if (db) {
+        db.close(() => {});
+        db = null;
+        rmSync("/tmp/flumeview-level-custom", { recursive: true, force: true });
+      }
+    });
+
     test("non-live read", async () => {
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
@@ -128,6 +133,11 @@ describe("flumeview-level-custom flumeview builder tests", () => {
           aborter,
           pull.drain(
             (item) => {
+              if (item.value === "value") {
+                // Wait until the stream gets going so that we get this as a 'live' stream event
+                append({ id: "testaroonie3", value: "value3" });
+              }
+
               if (item.value === "value3") {
                 aborter.abort();
               }
@@ -141,69 +151,80 @@ describe("flumeview-level-custom flumeview builder tests", () => {
         );
       });
 
-      await append({ id: "testaroonie3", value: "value3" });
       const result = await resultPromise;
 
-      expect(result.length).toStrictEqual(3);
+      // One item is a 'sync' message indicating the stream is now live
+      expect(result.length).toStrictEqual(4);
 
       expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
       expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
-      expect(result[2]).toStrictEqual({ key: "testaroonie3", value: "value3" });
+      expect(result[3]).toStrictEqual({
+        key: "testaroonie3",
+        value: "value3",
+        type: "put",
+      });
     });
 
     test("Read live stream (deletion)", async () => {
-      //   function mapper(db, item) {
-      //     console.log(item);
+      function mapper(db, item) {
+        const type = item.type || "put";
+        return [{ type: type, key: item.id, value: item.value, type: type }];
+      }
 
-      //     const type = item.type || 'put';
-      //     return [{ type: type, key: item.id, value: item.value }];
-      //   }
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
 
-      // db = Flume(
-      //   Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      // ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
+      const append = util.promisify(db.append);
+      const read = db["flumeviewCustom"].read;
 
-      // const append = util.promisify(db.append);
-      // const read = db["flumeviewCustom"].read;
+      await append({ id: "testaroonie", value: "value" });
+      await append({ id: "testaroonie2", value: "value2" });
 
-      // await append({ id: "testaroonie", value: "value" });
-      // await append({ id: "testaroonie2", value: "value2" });
+      const source = read({
+        live: true,
+        gte: "testaroonie",
+      });
 
-      // const source = read({
-      //   live: true,
-      //   gte: "testaroonie"
-      // });
+      const aborter = Aborter();
 
-      // const aborter = Aborter();
+      const resultPromise = new Promise((resolve, reject) => {
+        const result = [];
+        pull(
+          source,
+          aborter,
+          pull.drain(
+            (item) => {
+              if (item.key === "testaroonie") {
+                // Append once we're reading from the stream so that it appears once we go live
+                append({ id: "testaroonie", type: "del" });
+              }
 
-      // const resultPromise = new Promise((resolve, reject) => {
-      //   const result = [];
-      //   pull(
-      //     source,
-      //     aborter,
-      //     pull.drain(
-      //       (item) => {
-      //         if (item.value === "value3") {
-      //           aborter.abort();
-      //         }
+              if (item.type === "del") {
+                aborter.abort();
+              }
 
-      //         result.push(item);
-      //       },
-      //       (err) => {
-      //         err ? reject(err) : resolve(result);
-      //       },
-      //     ),
-      //   );
-      // });
+              result.push(item);
+            },
+            (err) => {
+              err ? reject(err) : resolve(result);
+            },
+          ),
+        );
+      });
 
-      // await append({ id: "testaroonie", value: "value3", type: 'del' });
-      // const result = await resultPromise;
+      const result = await resultPromise;
 
-      // expect(result.length).toStrictEqual(3);
+      expect(result.length).toStrictEqual(4);
 
-      // expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
-      // expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
-      // expect(result[2]).toStrictEqual({ key: "testaroonie", type: "del" });
+      expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
+      expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
+      // Sync message expected inbetween
+      expect(result[3]).toStrictEqual({
+        key: "testaroonie",
+        type: "del",
+        value: undefined,
+      });
     });
 
     test("Read live stream (update key)", () => {});
@@ -215,5 +236,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
   describe("Offset tracking", () => {
     test("Starts from last offset on startup", () => {});
+
+    test("Rebuilds the index if the new version is greater than the current index", () => {});
   });
 });

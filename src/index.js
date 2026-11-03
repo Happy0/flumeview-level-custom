@@ -3,9 +3,8 @@ const path = require("path");
 const Write = require("pull-write");
 const charwise = require("charwise");
 const { Level } = require("level");
-const Live = require("pull-live");
-const { old, live } = require("./read");
 const pull = require("pull-stream");
+const { createPullStream } = require("./stream/read");
 
 const METADATA_KEY = "\x00";
 
@@ -139,14 +138,7 @@ module.exports = function (version, asyncMapper, filter) {
         });
       },
       read: function (opts) {
-        return Live(
-          function (opts) {
-            return old(db, opts);
-          },
-          function (opts) {
-            return live(db, opts);
-          },
-        )(opts);
+        return createPullStream(db, opts);
       },
     };
   };
