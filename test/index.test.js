@@ -244,7 +244,70 @@ describe("flumeview-level-custom flumeview builder tests", () => {
   });
 
   describe("Offset tracking", () => {
-    test("Starts from last offset reached on startup", () => {});
+    test("Starts from last offset reached on startup", async () => {
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
+
+      const get = util.promisify(db["flumeviewCustom"].get);
+      const append = util.promisify(db.append);
+
+      await append({ id: "testaroonie", value: "testarino" });
+
+      const result = await get("testaroonie");
+
+      expect(result).toStrictEqual("testarino");
+
+      // Append a couple of new items before mounting the view
+
+      db.close(() => {});
+
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
+      );
+
+      const append2 = util.promisify(db.append);
+      await append2({ id: "testaroonie2", value: "testarino2" });
+      await append2({ id: "testaroonie3", value: "testarino3" });
+
+      db.close(() => {});
+
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
+
+      const read = db["flumeviewCustom"].read;
+
+      const source = read({
+        live: false,
+        gte: "testaroonie",
+        values: true,
+        keys: false,
+      });
+
+      // The stream will pause until the indexing has caught up with our new items (since has reached the log seq),
+      // then emit all the new items
+      const result2 = await new Promise((resolve, reject) => {
+        const result = [];
+        pull(
+          source,
+          pull.drain(
+            (item) => {
+              result.push(item);
+            },
+            (err) => {
+              err ? reject(err) : resolve(result);
+            },
+          ),
+        );
+      });
+
+      expect(result2.length).toStrictEqual(3);
+
+      expect(result2[0]).toStrictEqual("testarino");
+      expect(result2[1]).toStrictEqual("testarino2");
+      expect(result2[2]).toStrictEqual("testarino3");
+    });
 
     test("Rebuilds the index if the new version is greater than the current index", async () => {
       function newSchemaMapper(db, item) {
