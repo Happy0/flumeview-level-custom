@@ -179,7 +179,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       const read = db["flumeviewCustom"].read;
 
       await append({ id: "testaroonie", value: "value" });
-      await append({ id: "testaroonie2", value: "value2" });
+      await append({ id: "testaroonie2", value: { test: "value2" } });
 
       const source = read({
         live: true,
@@ -218,7 +218,10 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       expect(result.length).toStrictEqual(4);
 
       expect(result[0]).toStrictEqual({ key: "testaroonie", value: "value" });
-      expect(result[1]).toStrictEqual({ key: "testaroonie2", value: "value2" });
+      expect(result[1]).toStrictEqual({
+        key: "testaroonie2",
+        value: { test: "value2" },
+      });
       // Sync message expected inbetween
       expect(result[3]).toStrictEqual({
         key: "testaroonie",
@@ -232,11 +235,52 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     test("Read stream (keys only)", () => {});
 
     test("Read stream (values only)", () => {});
+
+    test("Read stream (live, keys only)", () => {});
+
+    test("Read stream (live, values only)", () => {});
+
+    test("Read stream live, custom key encoding", () => {});
   });
 
   describe("Offset tracking", () => {
-    test("Starts from last offset on startup", () => {});
+    test("Starts from last offset reached on startup", () => {});
 
-    test("Rebuilds the index if the new version is greater than the current index", () => {});
+    test("Rebuilds the index if the new version is greater than the current index", async () => {
+      function newSchemaMapper(db, item) {
+        return [
+          {
+            type: "put",
+            key: item.id,
+            value: { item: item.value, version: 2 },
+          },
+        ];
+      }
+
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(1, mapper));
+
+      const get = util.promisify(db["flumeviewCustom"].get);
+      const append = util.promisify(db.append);
+
+      await append({ id: "testaroonie", value: "testarino" });
+
+      const result = await get("testaroonie");
+
+      expect(result).toStrictEqual("testarino");
+
+      db.close(() => {});
+
+      db = Flume(
+        Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
+      ).use("flumeviewCustom", FlumeviewCustom(2, newSchemaMapper));
+
+      const get2 = util.promisify(db["flumeviewCustom"].get);
+
+      const updatedResult = await get2("testaroonie");
+
+      expect(updatedResult).toStrictEqual({ item: "testarino", version: 2 });
+    });
   });
 });
