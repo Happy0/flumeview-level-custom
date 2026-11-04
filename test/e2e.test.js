@@ -112,12 +112,16 @@ function chessView(flumeDb) {
     },
     getOutboundInvites: function (inviter) {
       return chessView.read({
+        // TODO: proper key range
+
         gt: `/player/inviter/${inviter}`,
         lt: `/player/j`,
       });
     },
     getInboundInvites: function (invitee) {
       return chessView.read({
+        // TODO: proper key range
+
         gt: `/player/invited/${invitee}`,
         lt: `/player/inviteda`,
       });
@@ -136,6 +140,7 @@ function chessView(flumeDb) {
       //   },
       // }
       return chessView.read({
+        // TODO: proper key range
         gt: `/player/live_game/${playerId}`,
         lt: `/player/live_game/${playerId}a`,
       });
