@@ -1,4 +1,4 @@
-var Log = require("flumelog-offset");
+const Log = require("flumelog-offset");
 const { mapperBuilder, FlumeViewCustom } = require("../src");
 const Flume = require("flumedb");
 const codec = require("flumecodec");
