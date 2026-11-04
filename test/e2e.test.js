@@ -82,12 +82,12 @@ function chessView(flumeDb) {
         { type: "put", key: `/games/${gameId}`, value: existingEntry },
         {
           type: "put",
-          key: `/player/live_game/${existingEntry.inviter}/game${gameId}`,
+          key: `/player/live_game/${existingEntry.inviter}/game/${gameId}`,
           value: existingEntry,
         },
         {
           type: "put",
-          key: `/player/live_game/${existingEntry.invitee}/game${gameId}`,
+          key: `/player/live_game/${existingEntry.invitee}/game/${gameId}`,
           value: existingEntry,
         },
       ];
@@ -112,37 +112,20 @@ function chessView(flumeDb) {
     },
     getOutboundInvites: function (inviter) {
       return chessView.read({
-        // TODO: proper key range
-
         gt: `/player/inviter/${inviter}`,
         lt: `/player/j`,
       });
     },
     getInboundInvites: function (invitee) {
       return chessView.read({
-        // TODO: proper key range
-
-        gt: `/player/invited/${invitee}`,
-        lt: `/player/inviteda`,
+        gt: `/player/invited/${invitee}/`,
+        lt: `/player/invited/${invitee}/\uffff`,
       });
     },
     getGamesInProgress: function (playerId) {
-      //         {
-      //   type: "put",
-      //   key: "/player/live_game/@RJ09Kfs3neEZPrbpbWVDxkN92x9moe3aPusOMOc4S2I=.ed25519/game%Zf7y1aoZ/51P5IzF6GEvXNRkBqs+X7r+hG5djhQfwpM=.sha256",
-      //   value: {
-      //     id: "%Zf7y1aoZ/51P5IzF6GEvXNRkBqs+X7r+hG5djhQfwpM=.sha256",
-      //     inviter: "@RJ09Kfs3neEZPrbpbWVDxkN92x9moe3aPusOMOc4S2I=.ed25519",
-      //     invitee: "@STgkEO48Kucd57i7x0vBqfkz/euvt2XdglwF6gZLtdk=.ed25519",
-      //     white: "@STgkEO48Kucd57i7x0vBqfkz/euvt2XdglwF6gZLtdk=.ed25519",
-      //     black: "@RJ09Kfs3neEZPrbpbWVDxkN92x9moe3aPusOMOc4S2I=.ed25519",
-      //     state: "accepted",
-      //   },
-      // }
       return chessView.read({
-        // TODO: proper key range
-        gt: `/player/live_game/${playerId}`,
-        lt: `/player/live_game/${playerId}a`,
+        gt: `/player/live_game/${playerId}/`,
+        lt: `/player/live_game/${playerId}/\uffff`,
       });
     },
   };
@@ -222,7 +205,7 @@ describe("End to end scenario", () => {
 
     expect(result.length).toStrictEqual(1);
 
-    const invitedSource = chess.getInboundInvites(
+    const invitedSource = chess.getOutboundInvites(
       "@RJ09Kfs3neEZPrbpbWVDxkN92x9moe3aPusOMOc4S2I=.ed25519",
     );
     const invitedResult = await pullCollectPromise(invitedSource);
