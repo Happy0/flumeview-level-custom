@@ -112,8 +112,8 @@ function chessView(flumeDb) {
     },
     getOutboundInvites: function (inviter) {
       return chessView.read({
-        gt: `/player/inviter/${inviter}`,
-        lt: `/player/j`,
+        gt: `/player/inviter/${inviter}/`,
+        lt: `/player/inviter/${inviter}/\uffff`,
       });
     },
     getInboundInvites: function (invitee) {
