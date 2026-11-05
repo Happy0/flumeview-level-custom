@@ -1,5 +1,5 @@
 const Log = require("flumelog-offset");
-const { mapperBuilder, FlumeViewCustom } = require("../src");
+const { mapperBuilder, FlumeViewLevelCustom } = require("../src");
 const Flume = require("flumedb");
 const codec = require("flumecodec");
 const util = require("util");
@@ -34,7 +34,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     test("Test without optional filter function parameter set", async () => {
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const get = util.promisify(db["flumeviewCustom"].get);
       const append = util.promisify(db.append);
@@ -51,7 +51,10 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter(), filter));
+      ).use(
+        "flumeviewCustom",
+        FlumeViewLevelCustom(1, defaultWriter(), filter),
+      );
 
       const append = util.promisify(db.append);
       const get = util.promisify(db["flumeviewCustom"].get);
@@ -74,7 +77,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     test("non-live read", async () => {
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const append = util.promisify(db.append);
       const read = db["flumeviewCustom"].read;
@@ -111,7 +114,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     test("Read live stream", async () => {
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const append = util.promisify(db.append);
       const read = db["flumeviewCustom"].read;
@@ -173,7 +176,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, createWriter(mapper)));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, createWriter(mapper)));
 
       const append = util.promisify(db.append);
       const read = db["flumeviewCustom"].read;
@@ -247,7 +250,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     test("Starts from last offset reached on startup", async () => {
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const get = util.promisify(db["flumeviewCustom"].get);
       const append = util.promisify(db.append);
@@ -274,7 +277,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const read = db["flumeviewCustom"].read;
 
@@ -322,7 +325,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
-      ).use("flumeviewCustom", FlumeViewCustom(1, defaultWriter()));
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter()));
 
       const get = util.promisify(db["flumeviewCustom"].get);
       const append = util.promisify(db.append);
@@ -339,7 +342,7 @@ describe("flumeview-level-custom flumeview builder tests", () => {
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
       ).use(
         "flumeviewCustom",
-        FlumeViewCustom(2, createWriter(newSchemaMapper)),
+        FlumeViewLevelCustom(2, createWriter(newSchemaMapper)),
       );
 
       const get2 = util.promisify(db["flumeviewCustom"].get);

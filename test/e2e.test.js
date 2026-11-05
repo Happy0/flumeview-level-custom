@@ -1,4 +1,4 @@
-const { FlumeViewCustom, mapperBuilder } = require("../src/index");
+const { FlumeViewLevelCustom, mapperBuilder } = require("../src/index");
 const Flume = require("flumedb");
 const util = require("util");
 const pull = require("pull-stream");
@@ -96,7 +96,7 @@ function chessView(flumeDb) {
     }
   }
 
-  const chessFlumeView = FlumeViewCustom(
+  const chessFlumeView = FlumeViewLevelCustom(
     1,
     mapperBuilder.sequentialMapper(chessMapper),
   );

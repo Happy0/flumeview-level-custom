@@ -26,7 +26,9 @@ module.exports.sequentialMapper = function (asyncMapper) {
               since.set(item.seq);
               cb();
             })
-            .catch((e) => console.error(e));
+            .catch((e) => {
+              cb(e);
+            });
         }
       },
       null,
