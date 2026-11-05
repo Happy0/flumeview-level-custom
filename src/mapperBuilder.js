@@ -27,6 +27,7 @@ module.exports.sequentialMapper = function (asyncMapper) {
               cb();
             })
             .catch((e) => {
+              console.error(e);
               cb(e);
             });
         }
