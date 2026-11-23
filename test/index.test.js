@@ -272,7 +272,9 @@ describe("flumeview-level-custom flumeview builder tests", () => {
       await append2({ id: "testaroonie2", value: "testarino2" });
       await append2({ id: "testaroonie3", value: "testarino3" });
 
-      db.close(() => {});
+      await new Promise((resolve, reject) => db.close(() => {
+        resolve()
+      }));
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
@@ -335,7 +337,9 @@ describe("flumeview-level-custom flumeview builder tests", () => {
 
       expect(result).toStrictEqual("testarino");
 
-      db.close(() => {});
+      await new Promise((resolve, reject) => db.close(() => {
+        resolve()
+      }));
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log2.offset", 1024, codec.json),
