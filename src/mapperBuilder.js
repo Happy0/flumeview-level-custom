@@ -42,7 +42,7 @@ module.exports.sequentialMapper = function (asyncMapper, filter) {
       createMetadataUpdatingFilter(filter, db, since, version),
       writer,
     );
-    stream.abort = writer.abort;
+
     return stream;
   };
 };
@@ -53,7 +53,8 @@ module.exports.sequentialMapper = function (asyncMapper, filter) {
  * of the log on startup if something didn't match our filter
  */
 function createMetadataUpdatingFilter(filter, db, since, version) {
-  let count = 0;
+  // Start at -1 so that we write our progress on the first item
+  let count = -1;
 
   return pull(
     pull.asyncMap((item, cb) => {

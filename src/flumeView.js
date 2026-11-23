@@ -5,6 +5,7 @@ const { Level } = require("level");
 const pull = require("pull-stream");
 const { createPullStream } = require("./stream/read");
 const { METADATA_KEY } = require("./metadata");
+const Abortable = require("pull-abortable");
 
 module.exports = function (version, createWriter) {
   return function (log, name) {
@@ -17,6 +18,7 @@ module.exports = function (version, createWriter) {
     startConsumingLog(db, since, version);
 
     let writer;
+    let aborter;
 
     function destroy(cb) {
       cb = cb || (() => {});
@@ -51,7 +53,8 @@ module.exports = function (version, createWriter) {
       since: since,
       createSink: function (cb) {
         writer = createWriter(db, since, version, cb);
-        return writer;
+        aborter = Abortable()
+        return pull(aborter, writer);
       },
       destroy: destroy,
       close: function (cb) {
@@ -59,8 +62,9 @@ module.exports = function (version, createWriter) {
 
         closed = true;
 
-        if (writer) {
-          writer.abort(() => db.close().then(cb));
+        if (writer && aborter) {
+          aborter.abort();
+          db.close().then(cb)
         } else {
           db.close().then(cb);
         }
