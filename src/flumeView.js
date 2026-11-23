@@ -6,7 +6,7 @@ const pull = require("pull-stream");
 const { createPullStream } = require("./stream/read");
 const { METADATA_KEY } = require("./metadata");
 
-module.exports = function (version, createWriter, filter) {
+module.exports = function (version, createWriter) {
   return function (log, name) {
     const dir = path.dirname(log.filename);
 
@@ -25,18 +25,23 @@ module.exports = function (version, createWriter, filter) {
     }
 
     async function startConsumingLog(db, since) {
-      const value = await db.get(METADATA_KEY, { keyEncoding: "utf8" });
+      try {
+        const value = await db.get(METADATA_KEY, { keyEncoding: "utf8" });
 
-      if (!value) {
-        // No existing entry, we're consuming the log from the start
-        since.set(-1);
-      } else if (value.version === version) {
-        // The version has not changed, resume consuming the log from where we left off
-        // last time
-        since.set(value.since);
-      } else {
-        // version has changed, wipe db and start over.
-        destroy(() => {});
+        if (!value) {
+          // No existing entry, we're consuming the log from the start
+          since.set(-1);
+        } else if (value.version === version) {
+          // The version has not changed, resume consuming the log from where we left off
+          // last time
+          since.set(value.since);
+        } else {
+          // version has changed, wipe db and start over.
+          destroy(() => {});
+        }
+      } catch (e) {
+        console.error(e);
+        throw e;
       }
     }
 
@@ -46,15 +51,7 @@ module.exports = function (version, createWriter, filter) {
       since: since,
       createSink: function (cb) {
         writer = createWriter(db, since, version, cb);
-
-        if (!filter) {
-          return writer;
-        } else {
-          return pull(
-            pull.filter((item) => filter(item.value)),
-            writer,
-          );
-        }
+        return writer;
       },
       destroy: destroy,
       close: function (cb) {

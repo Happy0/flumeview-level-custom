@@ -8,8 +8,8 @@ const pull = require("pull-stream");
 const Aborter = require("pull-abortable");
 
 describe("flumeview-level-custom flumeview builder tests", () => {
-  function defaultWriter() {
-    return mapperBuilder.sequentialMapper(defaultMapper);
+  function defaultWriter(filter) {
+    return mapperBuilder.sequentialMapper(defaultMapper, filter);
   }
 
   function createWriter(mapper) {
@@ -47,14 +47,13 @@ describe("flumeview-level-custom flumeview builder tests", () => {
     });
 
     test("Test with optional filter function parameter set", async () => {
-      const filter = (item) => item.type !== "post";
+      const filter = (item) => {
+        return item.type !== "post";
+      };
 
       db = Flume(
         Log("/tmp/flumeview-level-custom/log.offset", 1024, codec.json),
-      ).use(
-        "flumeviewCustom",
-        FlumeViewLevelCustom(1, defaultWriter(), filter),
-      );
+      ).use("flumeviewCustom", FlumeViewLevelCustom(1, defaultWriter(filter)));
 
       const append = util.promisify(db.append);
       const get = util.promisify(db["flumeviewCustom"].get);

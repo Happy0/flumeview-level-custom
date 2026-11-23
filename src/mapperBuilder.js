@@ -1,11 +1,12 @@
 const Write = require("pull-write");
 const { createMetadataUpdateItem } = require("./metadata");
+const pull = require("pull-stream");
 
-module.exports.sequentialMapper = function (asyncMapper) {
+module.exports.sequentialMapper = function (asyncMapper, filter) {
   const MAX_ITEM_BUFFER_SIZE = 0;
 
   return function (db, since, version, streamEndCb) {
-    return Write(
+    const writer = Write(
       function write(batch, cb) {
         if (batch.length !== 1) {
           cb(
@@ -36,5 +37,51 @@ module.exports.sequentialMapper = function (asyncMapper) {
       MAX_ITEM_BUFFER_SIZE,
       streamEndCb,
     );
+
+    const stream = pull(
+      createMetadataUpdatingFilter(filter, db, since, version),
+      writer,
+    );
+    stream.abort = writer.abort;
+    return stream;
   };
 };
+
+/**
+ * Applies the filter but updates the 'since' observable each time and periodically
+ * persists the current position in the log so that we don't have to consume large parts
+ * of the log on startup if something didn't match our filter
+ */
+function createMetadataUpdatingFilter(filter, db, since, version) {
+  let count = 0;
+
+  return pull(
+    pull.asyncMap((item, cb) => {
+      count = count + 1;
+
+      const passesFilter = filter ? filter(item.value) : true;
+
+      if (((count % 10000) === 0) && !passesFilter) {
+
+        const metadata = createMetadataUpdateItem(version, item.seq);
+
+        db.batch([metadata])
+          .then((_) => {
+            cb(null, null);
+          })
+          .catch((err) => {
+            console.error(err);
+            cb(err, null);
+          });
+
+        since.set(item.seq);
+      } else if (!passesFilter) {
+        since.set(item.seq);
+        cb(null, null);
+      } else {
+        cb(null, item);
+      }
+    }),
+    pull.filter((item) => item !== null),
+  );
+}
